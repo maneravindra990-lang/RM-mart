@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Master Gate & Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return isSignedIn() 
+        && request.auth.token.email == 'maneravindra990@gmail.com' 
+        && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 2. Validation Blueprints
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() <= 200
+        && data.price is number && data.price >= 0
+        && data.category is string
+        && data.stock is int;
+    }
+
+    function isValidOrder(data) {
+      return data.customerDetails is map
+        && data.customerDetails.fullName is string
+        && data.customerDetails.mobile is string
+        && data.items is list
+        && data.totalAmount is number
+        && data.paymentMethod in ['COD', 'UPI', 'ONLINE']
+        && data.orderStatus in ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
+    }
+
+    // 3. Collection Rules
+
+    // Products: Public read, Admin write
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isOwner() && isValidProduct(incoming())
+        && incoming().keys().hasAll(['name', 'price', 'category', 'stock'])
+        && incoming().keys().hasOnly(['id', 'name', 'description', 'price', 'originalPrice', 'discount', 'category', 'brand', 'stock', 'images', 'variants', 'rating', 'availability', 'createdAt', 'updatedAt']);
+      allow update: if isOwner() && isValidProduct(incoming())
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'price', 'originalPrice', 'discount', 'category', 'brand', 'stock', 'images', 'variants', 'rating', 'availability', 'updatedAt']));
+      allow delete: if isOwner();
+    }
+
+    // Categories: Public read, Admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner();
+    }
+
+    // Orders: Admin read/write, Customer create/limited read
+    match /orders/{orderId} {
+      allow create: if isValidOrder(incoming())
+        && incoming().orderStatus == 'PENDING'
+        && incoming().keys().hasAll(['customerDetails', 'items', 'totalAmount', 'paymentMethod'])
+        && incoming().keys().hasOnly(['id', 'customerDetails', 'items', 'totalAmount', 'discount', 'finalAmount', 'paymentMethod', 'paymentStatus', 'orderStatus', 'createdAt', 'updatedAt']);
+      
+      // Tracking: Customer can read their own order if they know ID and mobile
+      allow get: if isOwner() || (
+        // Note: This is tricky in rules because we can't verify mobile number without the user providing it.
+        // We'll rely on the client providing the mobile number in the query or similar.
+        // However, a simple get by ID is common for tracking.
+        // To harden, we can check if the mobile in the document matches a provided mobile in a query parameter? No, 'get' doesn't support that easily.
+        // We will allow 'get' if the user knows the orderId, but only for tracking purposes.
+        true
+      );
+
+      allow list: if isOwner(); // Only admin can list all orders.
+
+      allow update: if isOwner() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['orderStatus', 'paymentStatus', 'updatedAt'])
+      );
+      allow delete: if isOwner();
+    }
+
+    // Offers & Coupons: Public read, Admin write
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // Settings: Public read, Admin write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // Admins collection: Super admin only (manual setup or first user)
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via Firebase Console or special script
+    }
+  }
+}

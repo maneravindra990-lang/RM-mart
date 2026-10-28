@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An item available for purchase in the store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "discount": { "type": "number" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "stock": { "type": "integer" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "variants": { "type": "object" },
+        "rating": { "type": "number" },
+        "availability": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "category", "stock"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerDetails": {
+          "type": "object",
+          "properties": {
+            "fullName": { "type": "string" },
+            "mobile": { "type": "string" },
+            "email": { "type": "string" },
+            "address": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "pinCode": { "type": "string" }
+          }
+        },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "discount": { "type": "number" },
+        "finalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["COD", "UPI", "ONLINE"] },
+        "paymentStatus": { "type": "string", "enum": ["PENDING", "PAID", "FAILED"] },
+        "orderStatus": { "type": "string", "enum": ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerDetails", "items", "totalAmount", "paymentMethod"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Discount or promotion",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "categoryId": { "type": "string" },
+        "productId": { "type": "string" },
+        "type": { "type": "string" },
+        "active": { "type": "boolean" }
+      }
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Discount coupon code",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "minOrderValue": { "type": "number" },
+        "maxDiscount": { "type": "number" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" }
+      }
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Website global settings",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "deliveryCharges": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "storeAddress": { "type": "string" }
+      }
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A customer review for a product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 1000 },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "rating", "userName"]
+    }
+  },
+  "firestore": {
+    "products": { "schema": "Product", "description": "Collection of products" },
+    "categories": { "schema": "Category", "description": "Collection of categories" },
+    "orders": { "schema": "Order", "description": "Collection of customer orders" },
+    "offers": { "schema": "Offer", "description": "Collection of offers" },
+    "coupons": { "schema": "Coupon", "description": "Collection of coupons" },
+    "settings": { "schema": "Setting", "description": "Global website settings" },
+    "reviews": { "schema": "Review", "description": "Collection of product reviews" }
+  }
+}
